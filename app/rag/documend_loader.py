@@ -10,13 +10,24 @@ from langchain_core.documents import Document
 # app_logger: Logger kustom dari aplikasi untuk mencatat log/pesan sistem (seperti info, error, warning) demi pencatatan debugging
 from app.core.logger import app_logger
 
-# fungsi untuk load document dan split per halaman 
+# 3 FUNGSI DIBAWAH UNTUK MENGLOAD DOCUMENT DENGAN TIPE PDF/TXT/DOCX
 def load_pdf (file_path: Path) -> List[Document]:
     from langchain_community.document_loaders import PyPDFLoader
 
     app_logger.info(f"loading PDF: {file_path.name}")
     loader = PyPDFLoader(str(file_path))
-    docs = loader.load()
-    app_logger.info(f" -> {len(docs)} halaman doc ditemukan")
-    return docs
+    pdf = loader.load()
+    app_logger.info(f" -> {len(pdf)} halaman doc ditemukan")
+    return pdf
+
+def load_txt (file_path: Path) -> List[Document]:
+    from langchain_community.document_loaders import TextLoader
+    
+    app_logger.info(f" Loading Docs: {file_path.name}")
+    loader = TextLoader(str(file_path), encoding= "utf-8")
+    txt = loader.load()
+    app_logger.info(f" -> {len(txt)} halaman doc ditemukan")
+    return txt
+
+
     
