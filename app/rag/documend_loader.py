@@ -11,7 +11,8 @@ from langchain_core.documents import Document
 from app.core.logger import app_logger
 
 # ===================================================================================================
-''' 3 FUNGSI DIBAWAH UNTUK MENGLOAD DOCUMENT DENGAN TIPE PDF/TXT/DOCX '''
+''' 3 FUNGSI DIBAWAH UNTUK MENGLOAD DOCUMENT DENGAN TIPE PDF/TXT/DOCX/FILE LUAR '''
+
 def load_pdf(file_path: Path) -> List[Document]:
     """Membaca file PDF dan mengonversinya menjadi daftar dokumen LangChain."""
     # Mengimpor loader khusus file PDF dari LangChain
@@ -68,3 +69,50 @@ def load_docx(file_path: Path) -> List[Document]:
     # Catat log bahwa dokumen Word berhasil dimuat
     app_logger.info(f" -> {len(docx)} halaman doc ditemukan")
     return docx
+
+def load_document(file_path: str) -> List[Document]:
+    """
+    Fungsi utama (Router/Dispatcher) untuk memuat berbagai format dokumen 
+    (.pdf, .txt, .docx) dan menambahkan metadata standar pada hasilnya.
+    
+    Args:
+        file_path (str): Path/lokasi file dalam bentuk string.
+        
+    Returns:
+        List[Document]: Daftar objek Document yang sudah dilengkapi metadata.
+        
+    Raises:
+        FileNotFoundError: Jika file tidak ditemukan di direktori.
+        ValueError: Jika format/ekstensi file tidak didukung.
+    """
+    #  Mengubah string file_path menjadi objek Path (P kapital) dari pathlib
+    path = Path(file_path)
+    
+    # Validation 1: Cek apakah file benar-benar ada di sistem/direktori
+    if not path.exists():
+        raise FileNotFoundError(f"File tidak ditemukan: {file_path}")
+    
+    # Mengambil ekstensi file (misal: '.PDF' -> diubah ke huruf kecil '.pdf')
+    ext = path.suffix.lower()
+    
+    # Dictionary mapping: Memetakan ekstensi file ke fungsi loader masing-masing
+    loaders = {
+        ".pdf": load_pdf,
+        ".txt": load_txt,
+        ".docx": load_docx
+    }
+    
+    # Validation 2: Cek apakah ekstensi file terdaftar di dalam dictionary loaders
+    if ext not in loaders:
+        raise ValueError(f"Format tidak didukung: {ext}")   
+    
+    # Memanggil fungsi loader yang sesuai dengan ekstensinya (misal: load_pdf(path))
+    docs = loaders[ext](path)
+    
+    # Enriched Metadata: Menambahkan metadata tambahan ke setiap elemen Document
+    for doc in docs:
+        doc.metadata["source"] = path.name    # Nama asli file (contoh: "laporan.pdf")
+        doc.metadata["file_type"] = ext       # Ekstensi file (contoh: ".pdf")
+    
+    # Mengembalikan daftar dokumen yang siap digunakan (misal untuk Text Splitter / Vector Store)
+    return docs
